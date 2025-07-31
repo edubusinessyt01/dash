@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Financeiro MVP</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; }
+    form, table, canvas { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
+    table { width: 100%; border-collapse: collapse; }
+    table th, table td { padding: 8px; text-align: left; border-bottom: 1px solid #ccc; }
+    input, button { padding: 8px; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>Controle de Caixa - MVP</h1>
+  <form id="formulario">
+    <input type="date" id="data" required>
+    <input type="text" placeholder="PJ GIRO" id="pj_giro">
+    <input type="text" placeholder="PF CDB" id="pf_cdb">
+    <input type="text" placeholder="PF LCA" id="pf_lca">
+    <input type="text" placeholder="PF Tamires Giro" id="tamires_giro">
+    <input type="text" placeholder="PF Denilson Giro" id="denilson_giro">
+    <input type="text" placeholder="PF Denilson Picpay" id="denilson_picpay">
+    <input type="text" placeholder="Perfect" id="perfect">
+    <button type="submit">Adicionar</button>
+  </form>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Data</th><th>Total</th><th>Perfect</th>
+      </tr>
+    </thead>
+    <tbody id="historico"></tbody>
+  </table>
+
+  <canvas id="grafico" height="100"></canvas>
+
+  <script>
+    const form = document.getElementById('formulario');
+    const historico = document.getElementById('historico');
+    const graficoCtx = document.getElementById('grafico').getContext('2d');
+    let registros = JSON.parse(localStorage.getItem('registros') || '[]');
+
+    const parseInput = (id) => {
+      const raw = document.getElementById(id).value;
+      const clean = raw.replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    };
+
+    const renderTabela = () => {
+      historico.innerHTML = '';
+      registros.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.data}</td><td>${r.total.toLocaleString('pt-BR')}</td><td>${r.perfect.toLocaleString('pt-BR')}</td>`;
+        historico.appendChild(tr);
+      });
+    };
+
+    const renderGrafico = () => {
+      const labels = registros.map(r => r.data);
+      const totais = registros.map(r => r.total);
+      const perfects = registros.map(r => r.perfect);
+
+      new Chart(graficoCtx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Total', data: totais, borderColor: 'blue', fill: false },
+            { label: 'Perfect', data: perfects, borderColor: 'green', fill: false }
+          ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      });
+    };
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const data = document.getElementById('data').value;
+      const pj_giro = parseInput('pj_giro');
+      const pf_cdb = parseInput('pf_cdb');
+      const pf_lca = parseInput('pf_lca');
+      const tamires_giro = parseInput('tamires_giro');
+      const denilson_giro = parseInput('denilson_giro');
+      const denilson_picpay = parseInput('denilson_picpay');
+      const perfect = parseInput('perfect');
+
+      const total = pj_giro + pf_cdb + pf_lca + tamires_giro + denilson_giro + denilson_picpay;
+
+      registros.push({ data, total, perfect });
+      localStorage.setItem('registros', JSON.stringify(registros));
+
+      form.reset();
+      renderTabela();
+      renderGrafico();
+    });
+
+    // Inicializa
+    renderTabela();
+    renderGrafico();
+  </script>
+</body>
+</html>
